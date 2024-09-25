@@ -149,6 +149,4 @@ class GradescopeCourse:
                         
                         #print("NoSub", assignment_name, assignment["due_date"], name_cell)
 
-
-
         return assignments
