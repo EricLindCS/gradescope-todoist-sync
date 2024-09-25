@@ -17,6 +17,9 @@ client = GradescopeClient(email=os.environ.get("GRADESCOPE_USER"), password=os.e
 app = Flask(__name__)
 
 def sync_tasks():
+
+    print("Attempting To Update...")
+
     try:
         projects = api.get_projects()
     except Exception as error:
