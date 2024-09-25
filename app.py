@@ -54,11 +54,11 @@ def sync_tasks():
 
     toadd = []
     for task in result:
-        l_id = task.url
+        l_id = f"[https://www.gradescope.com{task.url}]"
         l_comp = (task.status != 'No Submission')
         l_str = task.url
         l_due = task.due_date
-        l_name = task.assignment_name
+        l_name = task._course.course_name + " " + task.assignment_name
         toadd.append(TodoistTask(l_id, l_comp, l_str, l_due, l_name))
 
     project.add_tasks(toadd)
