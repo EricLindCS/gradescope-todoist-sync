@@ -10,3 +10,4 @@ python-dateutil==2.9.0
 python-dotenv==1.0.1
 pytz==2024.2
 todoist-api-python==2.1.7
+flask==3.0.3
