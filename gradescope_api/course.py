@@ -12,57 +12,14 @@ from gradescope_api.utils import get_url_id
 if TYPE_CHECKING:
     from gradescope_api.client import GradescopeClient
 
-
 class GradescopeCourse:
-    def __init__(self, _client: GradescopeClient, course_id: str) -> None:
+    def __init__(self, _client: GradescopeClient, course_id: str, course_name: str) -> None:
         self._client = _client
         self.course_id = course_id
-        self.roster: List[GradescopeStudent] = []
+        self.course_name = course_name
 
     def get_url(self) -> str:
         return self._client.get_base_url() + f"/courses/{self.course_id}"
-
-    def get_roster(self) -> List[GradescopeStudent]:
-        if self.roster:
-            return self.roster
-
-        url = self._client.get_base_url() + f"/courses/{self.course_id}/memberships"
-        response = self._client.session.get(url=url, timeout=20)
-        check_response(response, "failed to get roster")
-
-        soup = BeautifulSoup(response.content, "html.parser")
-        for row in soup.find_all("tr", class_="rosterRow"):
-            nameButton = row.find("button", class_="js-rosterName")
-            role = row.find("option", selected=True).text
-            if nameButton and role == "Student":
-                user_id = nameButton["data-url"].split("?user_id=")[1]
-                editButton = row.find("button", class_="rosterCell--editIcon")
-                if editButton:
-                    data_email = editButton["data-email"]
-                    data_cm: Dict = json.loads(editButton["data-cm"])
-                    self.roster.append(
-                        GradescopeStudent(
-                            _client=self._client,
-                            user_id=user_id,
-                            full_name=data_cm.get("full_name"),
-                            first_name=data_cm.get("first_name"),
-                            last_name=data_cm.get("last_name"),
-                            sid=data_cm.get("sid"),
-                            email=data_email,
-                        )
-                    )
-
-        return self.roster
-
-    def get_student(self, sid: Optional[str] = None, email: Optional[str] = None) -> Optional[GradescopeStudent]:
-        assert sid or email
-        roster = self.get_roster()
-        for student in roster:
-            if sid != None and student.sid == sid:
-                return student
-            if email != None and student.email == email:
-                return student
-        return None
 
     def get_assignment(
         self, assignment_id: Optional[str] = None, assignment_url: Optional[str] = None
@@ -83,45 +40,115 @@ class GradescopeCourse:
         # Parse the HTML content using BeautifulSoup
         soup = BeautifulSoup(response.content, "html.parser")
 
-        
         assignments_table = soup.find("table", {"id": "assignments-student-table"})
         
         # List to hold all the assignments
         assignments = []
         
-        
+        tablerows = assignments_table.find("tbody").find_all("tr")
 
-        # Loop through the rows of the table
-        for row in assignments_table.find("tbody").find_all("tr"):
-            assignment = {}
+        if tablerows is not None:
+
+            for row in assignments_table.find("tbody").find_all("tr"):
+
+                assignment = {}
+                
+                # Extract assignment name
+                name_cell = row.find("th", {"class": "table--primaryLink"})
+
+                if name_cell is not None:
+
+                    assignment_name = name_cell.get_text(strip=True)
             
-            # Extract assignment name
-            name_cell = row.find("th", {"class": "table--primaryLink"})
-            assignment_name = name_cell.get_text(strip=True)
-            assignment_url = name_cell.find("a")["href"]
-            assignment["name"] = assignment_name
-            assignment["url"] = f"https://www.gradescope.com{assignment_url}"
-            
-            # Extract status
-            status_cell = row.find("td", {"class": "submissionStatus"})
-            assignment["status"] = status_cell.get_text(strip=True)
-            
-            # Extract due date and other time-related information
-            time_details = row.find("div", {"class": "submissionTimeChart submissionTimeChart-neutral"})
+                    if(name_cell.find("a") is not None):
 
-            if time_details is not None:
-                opened_date = time_details.find('time', {'class': 'submissionTimeChart--releaseDate'}).get('datetime')
-                due_date = time_details.find_all('time', {'class': 'submissionTimeChart--dueDate'})[0].get('datetime')
-                late_due_date = time_details.find_all('time', {'class': 'submissionTimeChart--dueDate'})[1].get('datetime')
+                        assignment_url = name_cell.find("a")["href"]
 
-                assignment["release_date"] = opened_date
-                assignment["due_date"] = due_date
-                assignment["late_due_date"] = late_due_date
-            else:
-                assignment["release_date"] = None
-                assignment["due_date"] = None
-                assignment["late_due_date"] = None
+                        assignment["name"] = assignment_name
+                        assignment["url"] = f"https://www.gradescope.com{assignment_url}"
+                        
+                        # Extract status
+                        status_cell = row.find("td", {"class": "submissionStatus"})
+                        assignment["status"] = status_cell.get_text(strip=True)
+                        #print(row)
+                        #print()
+                        # Extract due date and other time-related information
+                        if(row.find("div", {"class": "submissionTimeChart submissionTimeChart-neutral"}) is not None):
+                            time_details = row.find("div", {"class": "submissionTimeChart submissionTimeChart-neutral"})
 
-            assignments.append(assignment)
-        
+                            if time_details is not None:
+                                opened_date = time_details.find('time', {'class': 'submissionTimeChart--releaseDate'}).get('datetime')
+                                due_date = time_details.find_all('time', {'class': 'submissionTimeChart--dueDate'})[0].get('datetime')
+                                late_due_date = time_details.find_all('time', {'class': 'submissionTimeChart--dueDate'})[1].get('datetime')
+
+                                assignment["release_date"] = opened_date
+                                assignment["due_date"] = due_date
+                                assignment["late_due_date"] = late_due_date
+                            else:
+                                assignment["release_date"] = None
+                                assignment["due_date"] = None
+                                assignment["late_due_date"] = None
+
+                            #print("Sub", assignment_name, assignment["due_date"], name_cell)
+
+                            assignments.append(assignment)
+                        else:
+                            time_details = row.find("div", {"class": "progressBar--caption"})
+
+                            if time_details is not None:
+                                opened_date = time_details.find('time', {'class': 'submissionTimeChart--releaseDate'}).get('datetime')
+                                due_date = time_details.find_all('time', {'class': 'submissionTimeChart--dueDate'})[0].get('datetime')
+                                if(len(time_details.find_all('time', {'class': 'submissionTimeChart--dueDate'}))> 1):
+                                    late_due_date = time_details.find_all('time', {'class': 'submissionTimeChart--dueDate'})[1].get('datetime')
+                                else:
+                                    late_due_date = None
+
+                                assignment["release_date"] = opened_date
+                                assignment["due_date"] = due_date
+                                assignment["late_due_date"] = late_due_date
+
+                            else:
+                                assignment["release_date"] = None
+                                assignment["due_date"] = None
+                                assignment["late_due_date"] = None
+
+                            #print("Sub", assignment_name, assignment["due_date"], name_cell)
+
+                            assignments.append(assignment)
+                    
+                    else:
+
+                        # Else case: when there's a button for submission
+                        assignment_url = name_cell.find("button")["data-post-url"]
+                        assignment["name"] = assignment_name
+                        assignment["url"] = f"https://www.gradescope.com{assignment_url}"
+
+                        # Extract status
+                        status_cell = row.find("td", {"class": "submissionStatus"})
+                        assignment["status"] = status_cell.get_text(strip=True) if status_cell else "Unknown"
+
+                        # Extract due date and other time-related information
+                        time_details = row.find("div", {"class": "submissionTimeChart"})
+                        if time_details is not None:
+                            release_time = time_details.find('time', {"class": "submissionTimeChart--releaseDate"})
+                            due_time = time_details.find('time', {"class": "submissionTimeChart--dueDate"})
+
+                            assignment["release_date"] = release_time.get("datetime") if release_time else None
+                            assignment["due_date"] = due_time.get("datetime") if due_time else None
+                            # Assign late_due_date (if available)
+                            late_due_date = row.find_all('td', class_="hidden-column")
+                            assignment["late_due_date"] = late_due_date[1].get_text() if len(late_due_date) > 1 else None
+
+                        else:
+                            # Handle the else case for time details
+                            assignment["release_date"] = None
+                            assignment["due_date"] = None
+                            assignment["late_due_date"] = None
+
+                        assignments.append(assignment)
+                        
+                        #print("NoSub", assignment_name, assignment["due_date"], name_cell)
+
+
+
         return assignments

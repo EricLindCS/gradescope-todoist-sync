@@ -4,6 +4,8 @@ from bs4 import BeautifulSoup
 import requests
 from requests import Response
 from gradescope_api.course import GradescopeCourse
+from typing import TYPE_CHECKING, Dict, List, Optional
+
 
 from gradescope_api.errors import check_response
 from gradescope_api.utils import get_url_id
@@ -75,4 +77,31 @@ class GradescopeClient:
 
     def get_course(self, course_url: Optional[str] = None, course_id: Optional[str] = None):
         course_id = course_id or get_url_id(course_url, "courses")
-        return GradescopeCourse(_client=self, course_id=course_id)
+        return GradescopeCourse(_client=self, course_id=course_id, course_name="N/A")
+    
+    def get_course_list(self) -> List[GradescopeCourse]:
+        """
+        Fetch all assignments for the course and return a list of dictionaries containing
+        the assignment's name, status, release date, due date, and late due date.
+        """
+        url = BASE_URL
+        response = self.session.get(url=url, timeout=20)
+        #check_response(response, "failed to get roster")
+        
+        # Parse the HTML content using BeautifulSoup
+        soup = BeautifulSoup(response.content, "html.parser")
+
+        courses = soup.find_all('a', class_='courseBox')
+        
+        # Extract course names and links
+        course_data = []
+
+        if courses is not None:
+            for course in courses:
+                course_name = course.find('h3', class_='courseBox--shortname').text
+                course_link = course['href']
+                course_number = course_link.split('/')[-1]
+                courseobject = GradescopeCourse(_client=self, course_id=course_number, course_name=course_name)
+                course_data.append(courseobject)
+
+        return course_data
