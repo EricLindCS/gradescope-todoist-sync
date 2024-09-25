@@ -68,9 +68,8 @@ def schedule_sync():
 def home():
     return jsonify({"message": "Task sync app running!"})
 
-@app.before_first_request
-def activate_sync():
-    schedule_sync()
+# Start the synchronization when the app is initialized
+schedule_sync()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
