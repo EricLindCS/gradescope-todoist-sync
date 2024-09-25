@@ -1,3 +1,4 @@
 .env
 /env
+testsetup.py
 test.py
