@@ -44,24 +44,34 @@ def sync_tasks():
     # Fetch Gradescope assignments
     gs_assignments = [x.get_assignments_list() for x in client.get_course_list()]
     flattened_list = [item for sublist in gs_assignments for item in sublist]
-    gs_todo_list = [task for task in flattened_list if task.status == 'No Submission']
 
     # Fetch Todoist tasks
     todoist_tasklist = project.get_tasks()
 
+    #Fix This Loop
+    for task in todoist_tasklist:
+        # Check if task name matches any assignment name in the result list
+        matching_assignment = next((assignment for assignment in flattened_list if assignment.assignment_name == task.name), None)
+        if matching_assignment and matching_assignment.status != 'No Submission':
+            try:
+                is_success = api.close_task(task_id=task.id)
+                print(f"Closed task {task.name}: {is_success}")
+            except Exception as error:
+                print(error)
+
     # Compare and create new tasks if needed
-    result = [obj1 for obj1 in gs_todo_list if not any(obj1.assignment_name == obj2.name for obj2 in todoist_tasklist)]
+    result = [obj1 for obj1 in flattened_list if not any(obj1.assignment_name == obj2.name for obj2 in todoist_tasklist)]
 
     toadd = []
     for task in result:
         l_id = task.url
         l_comp = (task.status != 'No Submission')
-        l_str = f"{task._course.course_name} [https://www.gradescope.com{task.url}]"
+        l_str = f"{task._course.course_name} [{task._course.get_url}]"
         l_due = task.due_date
         l_name =  task.assignment_name
         toadd.append(TodoistTask(l_id, l_comp, l_str, l_due, l_name))
 
-    project.add_tasks(toadd)
+    project.add_tasks(toadd.append())
 
 def schedule_sync():
     sync_tasks()
