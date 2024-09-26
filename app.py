@@ -71,7 +71,7 @@ def sync_tasks():
         l_name =  task.assignment_name
         toadd.append(TodoistTask(l_id, l_comp, l_str, l_due, l_name))
 
-    project.add_tasks(toadd.append())
+    project.add_tasks(toadd.append(TodoistTask("Lab 1", True, "CS61A", "Tommorow", "Lab 1")))
 
 def schedule_sync():
     sync_tasks()
