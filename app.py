@@ -50,10 +50,13 @@ def sync_tasks():
     todoist_tasklist = project.get_tasks()
 
     # Compare and create new tasks if needed
-    result = [obj1 for obj1 in gs_todo_list if not any(obj1.assignment_name == obj2.name for obj2 in todoist_tasklist)]
+    existant_result = [obj1 for obj1 in gs_todo_list if any(obj1.assignment_name == obj2.name for obj2 in todoist_tasklist)]
+    no_result = [obj1 for obj1 in gs_todo_list if not any(obj1.assignment_name == obj2.name for obj2 in todoist_tasklist)]
+
+    
 
     toadd = []
-    for task in result:
+    for task in no_result:
         l_id = task.url
         l_comp = (task.status != 'No Submission')
         l_str = f"{task._course.course_name} [https://www.gradescope.com{task.url}]"
