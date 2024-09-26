@@ -16,8 +16,23 @@ if TYPE_CHECKING:
 
 GRADESCOPE_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
-
 class GradescopeAssignment:
+    def __init__(self, _client: GradescopeClient, _course: GradescopeCourse, assignment_name: str, url: str, status: str, released_date:str, due_date: str, late_due_date: str) -> None:
+        self._client = _client
+        self._course = _course
+        self.assignment_name = assignment_name
+        self.url = url
+        self.status = status
+        self.released_date = released_date
+        self.due_date = due_date
+        self.late_due_date = late_due_date
+
+    def get_url(self) -> str:
+        return self._course.get_url() + f"/assignments/{self.assignment_id}"
+
+    
+
+class SimpleGradescopeAssignment:
     def __init__(self, _client: GradescopeClient, _course: GradescopeCourse, assignment_id: str) -> None:
         self._client = _client
         self._course = _course
