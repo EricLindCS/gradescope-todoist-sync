@@ -64,7 +64,6 @@ class GradescopeCourse:
                         a_url = name_cell.find("a")["href"]
 
                         a_assignment_name = assignment_name
-                        #a_url = f"https://www.gradescope.com{a_url}"
                         
                         status_cell = row.find("td", {"class": "submissionStatus"})
                         a_status = status_cell.get_text(strip=True)
@@ -104,8 +103,6 @@ class GradescopeCourse:
                                 a_released_date = None
                                 a_due_date = None
                                 a_late_due_date = None
-
-                            #print("Sub", assignment_name, a_due_date, name_cell)
                     
                     else:
 
@@ -135,7 +132,6 @@ class GradescopeCourse:
                             a_due_date = None
                             a_late_due_date = None
 
-                #print(a_client, a_course, a_assignment_name, a_url, a_status, a_released_date, a_due_date, a_late_due_date)
                 assignments.append(GradescopeAssignment(a_client, a_course, a_assignment_name, a_url, a_status, a_released_date, a_due_date, a_late_due_date))
                         
         return assignments
