@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 
 from bs4 import BeautifulSoup
 from gradescope_api.errors import check_response
-from gradescope_api.student import GradescopeStudent
 from gradescope_api.assignment import GradescopeAssignment
 from gradescope_api.utils import get_url_id
 
