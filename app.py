@@ -42,7 +42,16 @@ def sync_tasks():
     project = TodoistProject(api, berkeley_projects.id, berkeley_projects.name)
 
     # Fetch Gradescope assignments
-    gs_assignments = [x.get_assignments_list() for x in client.get_course_list()]
+    # Read course IDs to exclude from courseexclusion.txt
+    with open('courseexclusion.txt', 'r') as f:
+        excluded_course_ids = {line.strip() for line in f}
+
+    # Get the list of courses and filter out excluded ones
+    courses = client.get_course_list()
+    filtered_courses = [course for course in courses if course.course_id not in excluded_course_ids]
+
+    # Get assignments for the filtered courses
+    gs_assignments = [course.get_assignments_list() for course in filtered_courses]
     flattened_list = [item for sublist in gs_assignments for item in sublist]
     gs_todo_list = [task for task in flattened_list if task.status == 'No Submission']
 
