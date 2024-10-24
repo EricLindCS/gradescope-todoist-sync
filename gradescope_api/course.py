@@ -106,7 +106,11 @@ class GradescopeCourse:
                     
                     else:
 
-                        a_url = name_cell.find("button")["data-post-url"]
+                        try:
+                            a_url = name_cell.find("button")["data-post-url"]
+                        except:
+                            a_url = "None"
+
                         a_assignment_name = assignment_name
                         #a_url = f"https://www.gradescope.com{a_url}"
 
@@ -117,6 +121,7 @@ class GradescopeCourse:
                         # Extract due date and other time-related information
                         time_details = row.find("div", {"class": "submissionTimeChart"})
                         if time_details is not None:
+                            
                             release_time = time_details.find('time', {"class": "submissionTimeChart--releaseDate"})
                             due_time = time_details.find('time', {"class": "submissionTimeChart--dueDate"})
 
