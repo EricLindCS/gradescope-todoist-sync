@@ -109,10 +109,8 @@ class GradescopeCourse:
                         try:
                             a_url = name_cell.find("button")["data-post-url"]
                         except:
-                            #Temp soltuion for quiz 8
-                            print("AAAAA")
+                            #Temp soltuion for quiz 8 / assignments with no submission
                             continue
-                            a_url = ""
 
                         a_assignment_name = assignment_name
                         #a_url = f"https://www.gradescope.com{a_url}"
