@@ -1,4 +1,5 @@
 from todoist_api.task import TodoistTask
+from todoist_api.section import TodoistSection
 import requests
 from requests import Response
 from todoist_api_python.api import TodoistAPI
@@ -31,7 +32,35 @@ class TodoistProject:
 
         return tasklist
     
+    def get_sections(self) -> List[TodoistSection]:
+
+        try:
+            sections = self.client.get_sections(project_id=self.p_id)
+        except Exception as error:
+            print(error)
+            return []
+        
+        sectionlist = []
+        
+        for section in sections:
+            s_id = section.id
+            s_name = section.name
+            
+            sectionlist.append(TodoistSection(s_id, s_name))
+
+        return sectionlist
+    
+    def add_section(self, name:str):
+    
+        try:
+            section = self.client.add_section(name=name, project_id=self.p_id)
+            print(section)
+        except Exception as error:
+            print(error)
+
+
     def add_tasks(self, tasks: List[TodoistTask]):
+
         for task in tasks:
             try:
                 exptask = self.client.add_task(
@@ -40,6 +69,7 @@ class TodoistProject:
                     description=task.description,
                     due_string=task.due,
                     due_lang="en",
+                    section_id=task.section.id
                 )
                 print(exptask)
             except Exception as error:

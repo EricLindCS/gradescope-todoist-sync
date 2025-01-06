@@ -6,7 +6,6 @@ from requests import Response
 from gradescope_api.course import GradescopeCourse
 from typing import TYPE_CHECKING, Dict, List, Optional
 
-
 from gradescope_api.errors import check_response
 from gradescope_api.utils import get_url_id
 

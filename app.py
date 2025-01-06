@@ -24,10 +24,9 @@ def sync_tasks():
         projects = api.get_projects()
     except Exception as error:
         print(error)
-        return
 
     project_names = [project.name.lower() for project in projects]
-    
+
     if 'berkeley' in project_names:
         berkeley_project_id = next((i for i, project in enumerate(projects) if project.name.lower() == 'berkeley'), None)
         berkeley_projects = projects[berkeley_project_id]
@@ -37,7 +36,6 @@ def sync_tasks():
             berkeley_projects = project
         except Exception as error:
             print(error)
-            return
 
     project = TodoistProject(api, berkeley_projects.id, berkeley_projects.name)
 
@@ -62,6 +60,7 @@ def sync_tasks():
     existant_result = [obj1 for obj1 in flattened_list if any(obj1.assignment_name == obj2.name for obj2 in todoist_tasklist)]
     no_result = [obj1 for obj1 in gs_todo_list if not any(obj1.assignment_name == obj2.name for obj2 in todoist_tasklist)]
 
+    '''
     for task in existant_result:
         if(task.status != 'No Submission'):
             tast = next((todoist_task for todoist_task in todoist_tasklist if task.assignment_name == todoist_task.name), None)
@@ -70,7 +69,15 @@ def sync_tasks():
                 print("Closed Task: " + tast.name + " " + is_success)
             except Exception as error:
                 print(error)
-            
+    '''
+
+    sections = project.get_sections()
+    no_sec_found = [course for course in courses if all(section.name != course.course_name for section in sections)]  
+    for sectoadd in no_sec_found:
+        project.add_section(sectoadd.course_name)  
+    sections = project.get_sections()
+    #project_sections = [section for section in sections if any(section.name == course.course_name for course in courses) else ]
+
     toadd = []
     for task in no_result:
         l_id = task.url
@@ -78,7 +85,8 @@ def sync_tasks():
         l_str = f"{task._course.course_name} [https://www.gradescope.com{task.url}]"
         l_due = task.due_date
         l_name =  task.assignment_name
-        toadd.append(TodoistTask(l_id, l_comp, l_str, l_due, l_name))
+        l_section = next((section for section in sections if section.name == task._course.course_name), None)
+        toadd.append(TodoistTask(l_id, l_comp, l_str, l_due, l_name, l_section))
 
     project.add_tasks(toadd)
 
