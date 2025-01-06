@@ -46,7 +46,11 @@ def sync_tasks():
 
     # Get the list of courses and filter out excluded ones
     courses = client.get_course_list()
-    filtered_courses = [course for course in courses if course.course_id not in excluded_course_ids]
+    non_excluded_courses = [course for course in courses if course.course_id not in excluded_course_ids]
+
+    # Further filter the courses to match the active term
+    active_term = client.get_latest_term()
+    filtered_courses = [course for course in non_excluded_courses if course.get_term() == active_term]
 
     # Get assignments for the filtered courses
     gs_assignments = [course.get_assignments_list() for course in filtered_courses]
@@ -60,7 +64,7 @@ def sync_tasks():
     existant_result = [obj1 for obj1 in flattened_list if any(obj1.assignment_name == obj2.name for obj2 in todoist_tasklist)]
     no_result = [obj1 for obj1 in gs_todo_list if not any(obj1.assignment_name == obj2.name for obj2 in todoist_tasklist)]
 
-    '''
+    
     for task in existant_result:
         if(task.status != 'No Submission'):
             tast = next((todoist_task for todoist_task in todoist_tasklist if task.assignment_name == todoist_task.name), None)
@@ -69,14 +73,22 @@ def sync_tasks():
                 print("Closed Task: " + tast.name + " " + is_success)
             except Exception as error:
                 print(error)
-    '''
 
+    #Add Sections
     sections = project.get_sections()
-    no_sec_found = [course for course in courses if all(section.name != course.course_name for section in sections)]  
+    no_sec_found = [course for course in filtered_courses if all(section.name != course.course_name for section in sections)]  
     for sectoadd in no_sec_found:
         project.add_section(sectoadd.course_name)  
-    sections = project.get_sections()
     #project_sections = [section for section in sections if any(section.name == course.course_name for course in courses) else ]
+
+    # Remove sections that don't have an active course associated with them
+    active_course_names = [course.course_name for course in filtered_courses]
+    for section in sections:
+        if section.name not in active_course_names:
+            project.remove_section(section.id)
+
+    #Final Sections List
+    sections = project.get_sections()
 
     toadd = []
     for task in no_result:
@@ -89,6 +101,8 @@ def sync_tasks():
         toadd.append(TodoistTask(l_id, l_comp, l_str, l_due, l_name, l_section))
 
     project.add_tasks(toadd)
+
+    print("Finished Update Cycle")
 
 def schedule_sync():
     sync_tasks()

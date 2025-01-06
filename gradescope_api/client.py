@@ -104,3 +104,22 @@ class GradescopeClient:
                 course_data.append(courseobject)
 
         return course_data
+
+    def get_term_list(self) -> List[str]:
+        url = BASE_URL
+        response = self.session.get(url=url, timeout=20)
+        # check_response(response, "failed to get terms")
+        
+        soup = BeautifulSoup(response.content, "html.parser")
+
+        # Extract terms
+        terms = soup.find_all('div', class_='courseList--term')
+        term_list = [term.text for term in terms]
+
+        return term_list
+    
+    def get_latest_term(self) -> Optional[str]:
+        term_list = self.get_term_list()
+        if term_list:
+            return term_list[0]  # Assuming the latest term is the first in the list, CHECK LATER
+        return None

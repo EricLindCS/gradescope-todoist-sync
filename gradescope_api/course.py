@@ -17,6 +17,20 @@ class GradescopeCourse:
         self.course_id = course_id
         self.course_name = course_name
 
+    def get_term(self) -> Optional[str]:
+
+        url = self._client.get_base_url() + f"/courses/{self.course_id}/"
+        response = self._client.session.get(url=url, timeout=20)
+        # check_response(response, "failed to get roster")
+        
+        soup = BeautifulSoup(response.content, "html.parser")
+    
+        # Extract the term from the course header
+        term_element = soup.find('h2', class_='courseHeader--term')
+        if term_element:
+            return term_element.text.strip()
+        return None
+
     def get_url(self) -> str:
         return self._client.get_base_url() + f"/courses/{self.course_id}"
 

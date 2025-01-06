@@ -51,10 +51,16 @@ class TodoistProject:
         return sectionlist
     
     def add_section(self, name:str):
-    
         try:
             section = self.client.add_section(name=name, project_id=self.p_id)
             print(section)
+        except Exception as error:
+            print(error)
+
+    def remove_section(self, id:str):
+        try:
+            is_success = self.client.delete_section(section_id=id)
+            print(is_success, "Deleted Section:", id)
         except Exception as error:
             print(error)
 
