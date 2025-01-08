@@ -4,6 +4,8 @@ from todoist_api_python.api import TodoistAPI
 from todoist_api.project import TodoistProject
 from todoist_api.task import TodoistTask
 from gradescope_api.client import GradescopeClient
+from canvas_api.client import CanvasAPI
+from canvas_api.course import CanvasCourse
 from dotenv import load_dotenv
 from datetime import datetime
 import os
@@ -12,12 +14,12 @@ import os
 load_dotenv()
 TODOIST_API_STRING = os.environ.get('TODOIST_API_KEY')
 api = TodoistAPI(TODOIST_API_STRING)
-client = GradescopeClient(email=os.environ.get("GRADESCOPE_USER"), password=os.environ.get("GRADESCOPE_PASSWORD"))
+gradescope_client = GradescopeClient(email=os.environ.get("GRADESCOPE_USER"), password=os.environ.get("GRADESCOPE_PASSWORD"))
+canvas_client = CanvasAPI(os.environ.get('CANVAS_API_URL'), os.environ.get('CANVAS_API'))
 
 app = Flask(__name__)
 
 def sync_tasks():
-
     print("Attempting To Update...")
 
     try:
@@ -44,16 +46,27 @@ def sync_tasks():
     with open('courseexclusion.txt', 'r') as f:
         excluded_course_ids = {line.strip() for line in f}
 
-    # Get the list of courses and filter out excluded ones
-    courses = client.get_course_list()
-    non_excluded_courses = [course for course in courses if course.course_id not in excluded_course_ids]
+    # Get the list of Gradescope courses and filter out excluded ones
+    gradescope_courses = gradescope_client.get_course_list()
+    non_excluded_gradescope_courses = [course for course in gradescope_courses if course.course_id not in excluded_course_ids]
 
-    # Further filter the courses to match the active term
-    active_term = client.get_latest_term()
-    filtered_courses = [course for course in non_excluded_courses if course.get_term() == active_term]
+    # Further filter the Gradescope courses to match the active term
+    active_term = gradescope_client.get_latest_term()
+    filtered_gradescope_courses = [course for course in non_excluded_gradescope_courses if course.get_term() == active_term]
 
-    # Get assignments for the filtered courses
-    gs_assignments = [course.get_assignments_list() for course in filtered_courses]
+    # Get the list of Canvas courses
+    canvas_courses_list = canvas_client.get_courses()
+    non_excluded_canvas_courses = [course for course in canvas_courses_list if course.course_id not in excluded_course_ids]
+    canvas_courses = [course for course in non_excluded_canvas_courses if course.get_term() == active_term]
+
+    # Combine courses, giving priority to Gradescope courses in case of duplicates
+    combined_courses = {course.course_name: course for course in filtered_gradescope_courses}
+    for course in canvas_courses:
+        if course.course_name not in combined_courses:
+            combined_courses[course.course_name] = course
+
+    # Get assignments for the combined courses
+    gs_assignments = [course.get_assignments_list() for course in combined_courses.values()]
     flattened_list = [item for sublist in gs_assignments for item in sublist]
     gs_todo_list = [task for task in flattened_list if task.status == 'No Submission']
 
@@ -64,9 +77,8 @@ def sync_tasks():
     existant_result = [obj1 for obj1 in flattened_list if any(obj1.assignment_name == obj2.name for obj2 in todoist_tasklist)]
     no_result = [obj1 for obj1 in gs_todo_list if not any(obj1.assignment_name == obj2.name for obj2 in todoist_tasklist)]
 
-    
     for task in existant_result:
-        if(task.status != 'No Submission'):
+        if task.status != 'No Submission':
             tast = next((todoist_task for todoist_task in todoist_tasklist if task.assignment_name == todoist_task.name), None)
             try:
                 is_success = api.close_task(tast.id)
@@ -74,29 +86,32 @@ def sync_tasks():
             except Exception as error:
                 print(error)
 
-    #Add Sections
+    # Add Sections
     sections = project.get_sections()
-    no_sec_found = [course for course in filtered_courses if all(section.name != course.course_name for section in sections)]  
+    no_sec_found = [course for course in combined_courses.values() if all(section.name != course.course_name for section in sections)]
     for sectoadd in no_sec_found:
-        project.add_section(sectoadd.course_name)  
-    #project_sections = [section for section in sections if any(section.name == course.course_name for course in courses) else ]
+        project.add_section(sectoadd.course_name)
 
     # Remove sections that don't have an active course associated with them
-    active_course_names = [course.course_name for course in filtered_courses]
+    active_course_names = [course.course_name for course in combined_courses.values()]
     for section in sections:
         if section.name not in active_course_names:
             project.remove_section(section.id)
 
-    #Final Sections List
+    # Final Sections List
     sections = project.get_sections()
 
     toadd = []
     for task in no_result:
         l_id = task.url
         l_comp = (task.status != 'No Submission')
-        l_str = f"{task._course.course_name} [https://www.gradescope.com{task.url}]"
+        if isinstance(task._course, CanvasCourse):
+            l_url = f"https://bcourses.berkeley.edu/courses/{task._course.course_id}/assignments/{task.assignment_id}"
+        else:
+            l_url = f"https://www.gradescope.com{task.url}"
+        l_str = f"{task._course.course_name} [{l_url}]"
         l_due = task.due_date
-        l_name =  task.assignment_name
+        l_name = task.assignment_name
         l_section = next((section for section in sections if section.name == task._course.course_name), None)
         toadd.append(TodoistTask(l_id, l_comp, l_str, l_due, l_name, l_section))
 

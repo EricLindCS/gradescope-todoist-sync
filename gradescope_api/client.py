@@ -12,7 +12,6 @@ from gradescope_api.utils import get_url_id
 USER_AGENT = "gradescope-api"
 BASE_URL = "https://gradescope.com"
 
-
 class GradescopeClient:
     def __init__(self, email: str, password: str) -> None:
         self.session = requests.Session()
