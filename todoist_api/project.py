@@ -25,7 +25,7 @@ class TodoistProject:
             t_id = task.id
             t_is_completed = task.is_completed
             t_description = task.description
-            t_due = "Tomorrow" #REPLACE REPLACE REPLACE
+            t_due = "" #REPLACE REPLACE REPLACE
             t_name = task.content
             
             tasklist.append(TodoistTask(t_id,t_is_completed,t_description,t_due,t_name))
