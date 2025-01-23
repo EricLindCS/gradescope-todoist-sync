@@ -59,10 +59,11 @@ def sync_tasks():
     non_excluded_canvas_courses = [course for course in canvas_courses_list if course.course_id not in excluded_course_ids]
     canvas_courses = [course for course in non_excluded_canvas_courses if course.get_term() == active_term]
 
+
     # Combine courses, giving priority to Gradescope courses in case of duplicates
     combined_courses = {course.course_name: course for course in filtered_gradescope_courses}
     for course in canvas_courses:
-        if course.course_name not in combined_courses:
+        if course.course_name not in combined_courses or True:
             combined_courses[course.course_name] = course
 
     # Get assignments for the combined courses

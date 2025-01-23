@@ -14,19 +14,20 @@ class CanvasAPI:
 
     def get_courses(self) -> List[CanvasCourse]:
         
-        endpoint = f"{self.base_url}/courses"
+        endpoint = f"{self.base_url}/courses?per_page=100"
         try:
             response = self.session.get(endpoint, headers=self.headers)
             response.raise_for_status()
             courses = response.json()
 
             # Regular expression to match course names with the pattern [Semester] [Year]
-            pattern = re.compile(r'\b(Fall|Spring|Summer|Winter) \d{4}\b')
-
+            pattern1 = re.compile(r'\b(Fall|Spring|Summer|Winter) \d{4}\b')
+            pattern2 = re.compile(r'\b(S|F|Su|W)\d{4}\b')
+    
             courses = [course for course in courses if 'name' in course]
-
+            
             # Filter courses
-            filtered_courses = [course for course in courses if pattern.search(course['name'])]
+            filtered_courses = [course for course in courses if pattern1.search(course['name']) or pattern2.search(course['name'])]
 
             # Filter for student enrollments
             student_courses = [
