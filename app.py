@@ -9,6 +9,7 @@ from canvas_api.course import CanvasCourse
 from dotenv import load_dotenv
 from datetime import datetime
 import os
+import requests
 
 # Load environment variables
 load_dotenv()
@@ -16,8 +17,18 @@ TODOIST_API_STRING = os.environ.get('TODOIST_API_KEY')
 api = TodoistAPI(TODOIST_API_STRING)
 gradescope_client = GradescopeClient(email=os.environ.get("GRADESCOPE_USER"), password=os.environ.get("GRADESCOPE_PASSWORD"))
 canvas_client = CanvasAPI(os.environ.get('CANVAS_API_URL'), os.environ.get('CANVAS_API'))
+EXCLUSION_URL = "https://raw.githubusercontent.com/EricLindCS/gradescope-todoist-sync/refs/heads/main/assignmentexclusion.txt"
 
 app = Flask(__name__)
+
+def fetch_exclusion_list(url):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        return {line.strip() for line in response.text.splitlines()}
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching exclusion list: {e}")
+        return set()
 
 def sync_tasks():
     print("Attempting To Update...")
@@ -71,12 +82,16 @@ def sync_tasks():
     flattened_list = [item for sublist in gs_assignments for item in sublist]
     gs_todo_list = [task for task in flattened_list if task.status == 'No Submission']
 
+    excluded_assignment_names = fetch_exclusion_list(EXCLUSION_URL)
+    gs_todo_list = [task for task in gs_todo_list if task.assignment_name not in excluded_assignment_names]
+
     # Fetch Todoist tasks
     todoist_tasklist = project.get_tasks()
 
     # Compare and create new tasks if needed
     existant_result = [obj1 for obj1 in flattened_list if any(obj1.assignment_name == obj2.name for obj2 in todoist_tasklist)]
     no_result = [obj1 for obj1 in gs_todo_list if not any(obj1.assignment_name == obj2.name for obj2 in todoist_tasklist)]
+
 
     for task in existant_result:
         if task.status != 'No Submission':
