@@ -27,8 +27,11 @@ class CanvasCourse:
     def get_assignments_list(self) -> List[CanvasAssignment]:
     
         endpoint = f"{self._client.base_url}/courses/{self.course_id}/assignments"
+        params = {
+        'include[]': 'submission'
+        }
         try:
-            response = self._client.session.get(endpoint, headers=self._client.headers)
+            response = self._client.session.get(endpoint, headers=self._client.headers, params=params)
             response.raise_for_status()
             assignments = response.json()
             canvas_assignments = []
@@ -36,7 +39,8 @@ class CanvasCourse:
             for assignment in assignments:
                 assignment_id = assignment['id']
                 assignment_name = assignment['name']
-                assignment_status= ("No Submission" if not(assignment['has_submitted_submissions'] or assignment['graded_submissions_exist']) else True)
+                submission = assignment.get('submission')
+                assignment_status = "No Submission" if submission is None or submission['workflow_state'] == "unsubmitted" else True
                 due_date = assignment.get('due_at')
                 canvas_assignment = CanvasAssignment(self._client, self, assignment_id, assignment_name, due_date, assignment_status)
                 canvas_assignments.append(canvas_assignment)

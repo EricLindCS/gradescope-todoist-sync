@@ -17,17 +17,19 @@ class CanvasAPI:
         endpoint = f"{self.base_url}/courses?per_page=100"
         try:
             response = self.session.get(endpoint, headers=self.headers)
+
             response.raise_for_status()
             courses = response.json()
 
             # Regular expression to match course names with the pattern [Semester] [Year]
             pattern1 = re.compile(r'\b(Fall|Spring|Summer|Winter) \d{4}\b')
             pattern2 = re.compile(r'\b(S|F|Su|W)\d{4}\b')
+            pattern3 = re.compile(r'\bFall|Spring|Summer|Winter \d{4}\b')
     
-            courses = [course for course in courses if 'name' in course]
-            
+            courses = [course for course in courses if 'name' in course or 'course_code' in course]
+
             # Filter courses
-            filtered_courses = [course for course in courses if pattern1.search(course['name']) or pattern2.search(course['name'])]
+            filtered_courses = [course for course in courses if pattern1.search(course['name']) or pattern2.search(course['name']) or pattern3.search(course['course_code']) ]
 
             # Filter for student enrollments
             student_courses = [
@@ -41,7 +43,17 @@ class CanvasAPI:
                 course_id = course['id']
 
                 term_match = re.search(r'\((.*?)\)', course['name'])
-                term = term_match.group(1) if term_match else ''
+                if term_match:
+                    term = term_match.group(1)
+                else:
+                    # Handle the format "ME85 S2025"
+                    term_match = re.search(r'\b([FS])(\d{4})\b', course['name'])
+                    if term_match:
+                        season = term_match.group(1)
+                        year = term_match.group(2)
+                        term = f"{'Spring' if season == 'S' else 'Fall'} {year}"
+                    else:
+                        term = ''
 
                 canvas_course = CanvasCourse(self, course_id, course_name, term)
 
