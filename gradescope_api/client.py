@@ -96,7 +96,7 @@ class GradescopeClient:
 
         if courses is not None:
             for course in courses:
-                course_name = course.find('h3', class_='courseBox--shortname').text
+                course_name = course.find('h3', class_='courseBox--shortname').text.strip()
                 course_link = course['href']
                 course_number = course_link.split('/')[-1]
                 courseobject = GradescopeCourse(_client=self, course_id=course_number, course_name=course_name)
