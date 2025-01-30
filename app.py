@@ -77,9 +77,12 @@ def sync_tasks():
         if course.course_name not in combined_courses or True:
             combined_courses[course.course_name] = course
 
+
     # Get assignments for the combined courses
-    gs_assignments = [course.get_assignments_list() for course in combined_courses.values()]
+    gs_assignments = [course.get_assignments_list() for course in combined_courses.values()]        
+
     flattened_list = [item for sublist in gs_assignments for item in sublist]
+
     gs_todo_list = [task for task in flattened_list if task.status == 'No Submission']
 
     excluded_assignment_names = fetch_exclusion_list(EXCLUSION_URL)
@@ -92,7 +95,6 @@ def sync_tasks():
     existant_result = [obj1 for obj1 in flattened_list if any(obj1.assignment_name == obj2.name for obj2 in todoist_tasklist)]
     no_result = [obj1 for obj1 in gs_todo_list if not any(obj1.assignment_name == obj2.name for obj2 in todoist_tasklist)]
 
-
     for task in existant_result:
         if task.status != 'No Submission':
             tast = next((todoist_task for todoist_task in todoist_tasklist if task.assignment_name == todoist_task.name), None)
@@ -104,7 +106,7 @@ def sync_tasks():
 
     # Add Sections
     sections = project.get_sections()
-    no_sec_found = [course for course in combined_courses.values() if all(section.name != course.course_name for section in sections)]
+    no_sec_found = [course for course in combined_courses.values() if all(section.name != course.course_name for section in sections) and course.get_assignments_list() != []]
     for sectoadd in no_sec_found:
         project.add_section(sectoadd.course_name)
 
@@ -130,6 +132,7 @@ def sync_tasks():
         l_name = task.assignment_name
         l_section = next((section for section in sections if section.name == task._course.course_name), None)
         toadd.append(TodoistTask(l_id, l_comp, l_str, l_due, l_name, l_section))
+        print(task.assignment_name)
 
     project.add_tasks(toadd)
 
