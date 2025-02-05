@@ -27,8 +27,9 @@ class TodoistProject:
             t_description = task.description
             t_due = "" #REPLACE REPLACE REPLACE
             t_name = task.content
+            t_labels = task.labels
             
-            tasklist.append(TodoistTask(t_id,t_is_completed,t_description,t_due,t_name))
+            tasklist.append(TodoistTask(t_id,t_is_completed,t_description,t_due,t_name,t_labels))
 
         return tasklist
     
@@ -64,10 +65,10 @@ class TodoistProject:
         except Exception as error:
             print(error)
 
-
     def add_tasks(self, tasks: List[TodoistTask]):
 
         for task in tasks:
+
             try:
                 exptask = self.client.add_task(
                     project_id=self.p_id,
@@ -75,9 +76,12 @@ class TodoistProject:
                     description=task.description,
                     due_string=task.due,
                     due_lang="en",
-                    section_id=task.section.id
+                    section_id=task.section.id,
+                    labels=task.labels
                 )
                 print(exptask)
             except Exception as error:
-                print(error)
+                print("Error Adding Task: ", error)
+    
+        
     

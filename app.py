@@ -85,24 +85,42 @@ def sync_tasks():
 
     gs_todo_list = [task for task in flattened_list if task.status == 'No Submission']
 
-    excluded_assignment_names = fetch_exclusion_list(EXCLUSION_URL)
-    gs_todo_list = [task for task in gs_todo_list if task.assignment_name not in excluded_assignment_names]
-
-    # Fetch Todoist tasks
+    #Get Todoist Tasks
     todoist_tasklist = project.get_tasks()
 
+    # Add tasks with 'Delete' label to exclusion file
+    with open('assignmentexclusion.txt', 'a') as f:
+        for task in todoist_tasklist:
+            if 'Delete' in task.labels:
+                f.write(f"{task.name}\n")
+                print("Excluded Task::" + task.name)
+
+                try:
+                    is_success = api.close_task(task.id)
+                    print("Closed Task: " + task.name + " " + "Success: " + str(is_success))
+                except Exception as error:
+                    print("Failed To Close Task:" + task.name + " - " + error)
+
+
+    #excluded_assignment_names = fetch_exclusion_list(EXCLUSION_URL)
+    with open('assignmentexclusion.txt', 'r') as f:
+        excluded_assignment_names = {line.strip() for line in f}
+
+    gs_todo_list = [task for task in gs_todo_list if task.assignment_name not in excluded_assignment_names]
+
     # Compare and create new tasks if needed
-    existant_result = [obj1 for obj1 in flattened_list if any(obj1.assignment_name == obj2.name for obj2 in todoist_tasklist)]
-    no_result = [obj1 for obj1 in gs_todo_list if not any(obj1.assignment_name == obj2.name for obj2 in todoist_tasklist)]
+    # Compare and create new tasks if needed
+    existant_result = [obj1 for obj1 in flattened_list if any(obj1.assignment_name == obj2.name and obj1._course.course_name in obj2.labels for obj2 in todoist_tasklist)]
+    no_result = [obj1 for obj1 in gs_todo_list if not any(obj1.assignment_name == obj2.name and obj1._course.course_name in obj2.labels for obj2 in todoist_tasklist)]
 
     for task in existant_result:
         if task.status != 'No Submission':
             tast = next((todoist_task for todoist_task in todoist_tasklist if task.assignment_name == todoist_task.name), None)
             try:
                 is_success = api.close_task(tast.id)
-                print("Closed Task: " + tast.name + " " + is_success)
+                print("Closed Task: " + tast.name + " " + "Success: " + str(is_success))
             except Exception as error:
-                print(error)
+                print("Failed To Close Task:" + tast.name + " - " + error)
 
     # Add Sections
     sections = project.get_sections()
@@ -131,7 +149,7 @@ def sync_tasks():
         l_due = task.due_date
         l_name = task.assignment_name
         l_section = next((section for section in sections if section.name == task._course.course_name), None)
-        toadd.append(TodoistTask(l_id, l_comp, l_str, l_due, l_name, l_section))
+        toadd.append(TodoistTask(l_id, l_comp, l_str, l_due, l_name, [task._course.course_name], l_section))
         print(task.assignment_name)
 
     project.add_tasks(toadd)
