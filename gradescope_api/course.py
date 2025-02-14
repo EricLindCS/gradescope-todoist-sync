@@ -152,6 +152,8 @@ class GradescopeCourse:
                             a_due_date = None
                             a_late_due_date = None
 
+
+                a_url = self._client.get_base_url() + f"/courses/{self.course_id}" #comment this out later
                 assignments.append(GradescopeAssignment(a_client, a_course, a_assignment_name, a_url, a_status, a_released_date, a_due_date, a_late_due_date))
                         
         return assignments
