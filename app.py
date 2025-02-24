@@ -31,7 +31,6 @@ def fetch_exclusion_list(url):
         return set()
 
 def sync_tasks():
-    print("Attempting To Update...")
 
     try:
         projects = api.get_projects()
@@ -153,9 +152,10 @@ def sync_tasks():
 
     project.add_tasks(toadd)
 
-    print("Finished Update Cycle")
+    #print("Finished Update Cycle")
 
 def schedule_sync():
+    print("Attempting To Update...")
     sync_tasks()
     Timer(39.0, schedule_sync).start()  # Re-run every 10 seconds
 
@@ -167,4 +167,4 @@ def home():
 schedule_sync()
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5001)
