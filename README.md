@@ -68,8 +68,15 @@ This project provides a way to sync assignments from Gradescope to Todoist. It u
     TODOIST_API_KEY=your_todoist_api_key
     GRADESCOPE_USER=your_gradescope_email
     GRADESCOPE_PASSWORD=your_gradescope_password
+    # Optional: Pensieve (requires a Google-authenticated session cookie)
+    # Get a browser session cookie for pensieve.co after signing in with Google and set it here.
+    PENSIEVE_COOKIE=your_pensieve_session_cookie_string
     ```
 
+Notes about Pensieve integration:
+- Pensieve currently requires Google-based authentication. This project supports a cookie-based approach: set `PENSIEVE_COOKIE` to a valid authenticated session cookie for `pensieve.co` (for example the `connect.sid` or full cookie header as needed). This is a pragmatic workaround for headless syncing; you may need to extract the cookie from your browser's developer tools.
+- Once configured, the sync script will attempt to list classes and fetch assignments from Pensieve and include them alongside Gradescope/Canvas courses.
+- This cookie-based approach is less secure than an OAuth flow — treat the cookie like a secret and avoid committing it to source control.
 ## Running Locally
 
 1. **Activate the virtual environment:**

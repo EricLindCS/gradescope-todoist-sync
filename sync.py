@@ -4,6 +4,8 @@ from todoist_api.task import TodoistTask
 from gradescope_api.client import GradescopeClient
 from canvas_api.client import CanvasAPI
 from canvas_api.course import CanvasCourse
+from pensieve_api.client import PensieveClient
+from pensieve_api.course import PensieveCourse
 from dotenv import load_dotenv
 from datetime import datetime
 import os
@@ -15,6 +17,14 @@ TODOIST_API_STRING = os.environ.get('TODOIST_API_KEY')
 api = TodoistAPI(TODOIST_API_STRING)
 gradescope_client = GradescopeClient(email=os.environ.get("GRADESCOPE_USER"), password=os.environ.get("GRADESCOPE_PASSWORD"))
 canvas_client = CanvasAPI(os.environ.get('CANVAS_API_URL'), os.environ.get('CANVAS_API'))
+pensieve_client = None
+try:
+    # instantiate Pensieve client only if cookie provided
+    if os.environ.get("PENSIEVE_COOKIE"):
+        pensieve_client = PensieveClient(session_cookie=os.environ.get("PENSIEVE_COOKIE"))
+except Exception as e:
+    # If Pensieve isn't configured or auth fails, we continue without it
+    print(f"Pensieve client not configured: {e}")
 EXCLUSION_URL = "https://raw.githubusercontent.com/EricLindCS/gradescope-todoist-sync/refs/heads/main/assignmentexclusion.txt"
 
 def fetch_exclusion_list(url):
@@ -72,6 +82,17 @@ def sync_tasks():
         if course.course_name not in combined_courses or True:
             combined_courses[course.course_name] = course
 
+    # If Pensieve is configured, fetch courses and add them
+    if pensieve_client:
+        try:
+            pensieve_courses = pensieve_client.get_course_list() or []
+            non_excluded_pensieve_courses = [course for course in pensieve_courses if course.course_id not in excluded_course_ids]
+            pensieve_courses_filtered = [course for course in non_excluded_pensieve_courses if course.get_term() == active_term]
+            for course in pensieve_courses_filtered:
+                combined_courses[course.course_name] = course
+        except Exception as e:
+            print(f"Error fetching Pensieve courses: {e}")
+
     # Get assignments for the combined courses
     gs_assignments = [course.get_assignments_list() for course in combined_courses.values()]
     flattened_list = [item for sublist in gs_assignments for item in sublist]
@@ -117,6 +138,9 @@ def sync_tasks():
         l_comp = (task.status != 'No Submission')
         if isinstance(task._course, CanvasCourse):
             l_url = f"https://bcourses.berkeley.edu/courses/{task._course.course_id}/assignments/{task.assignment_id}"
+        elif isinstance(task._course, PensieveCourse):
+            # Pensieve assignments may include full or relative URLs; use the assignment's url
+            l_url = task.url if task.url.startswith("http") else f"{pensieve_client.get_base_url()}{task.url}"
         else:
             l_url = f"https://www.gradescope.com{task.url}"
         l_str = f"{task._course.course_name} [{l_url}]"
