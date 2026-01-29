@@ -59,16 +59,18 @@ def sync_tasks():
     # Get the list of Gradescope courses and filter out excluded ones
     gradescope_courses = gradescope_client.get_course_list()
     non_excluded_gradescope_courses = [course for course in gradescope_courses if course.course_id not in excluded_course_ids]
+    # courses fetched from gradescope
 
     # Further filter the Gradescope courses to match the active term
     active_term = gradescope_client.get_latest_term()
     filtered_gradescope_courses = [course for course in non_excluded_gradescope_courses if course.get_term() == active_term]
+    print("Gradescope courses fetched:", [course.course_name for course in filtered_gradescope_courses])
 
     # Get the list of Canvas courses
     canvas_courses_list = canvas_client.get_courses()
     non_excluded_canvas_courses = [course for course in canvas_courses_list if course.course_id not in excluded_course_ids]
     canvas_courses = [course for course in non_excluded_canvas_courses if course.get_term() == active_term]
-
+    print("Canvas courses fetched:", [course.course_name for course in canvas_courses])
 
     # Combine courses, giving priority to Gradescope courses in case of duplicates
     combined_courses = {course.course_name: course for course in filtered_gradescope_courses}
@@ -78,11 +80,16 @@ def sync_tasks():
 
 
     # Get assignments for the combined courses
-    gs_assignments = [course.get_assignments_list() for course in combined_courses.values()]        
+    gs_assignments = [course.get_assignments_list() for course in combined_courses.values()]
+    # gs_assignments is a list of lists; iterate over each classe (list) then each assignment
+    #print("List of assignments fetched from combined courses:", [assignment.assignment_name for classe in gs_assignments for assignment in classe])
 
     flattened_list = [item for sublist in gs_assignments for item in sublist]
-
-    gs_todo_list = [task for task in flattened_list if task.status == 'No Submission']
+    #print("Flattened list of assignments:", [assignment.assignment_name for assignment in flattened_list])
+    gs_todo_list = [task for task in flattened_list if getattr(task, 'status', None) == 'No Submission']
+    # Nicely format status and assignment name for items with 'No Submission'
+    filtered_display = [f"{task.status} {getattr(task, 'assignment_name', getattr(task, 'name', ''))}" for task in flattened_list]
+    #print("Filtered list of assignments with 'No Submission' status:", filtered_display)
 
     #Get Todoist Tasks
     todoist_tasklist = project.get_tasks()
@@ -120,6 +127,8 @@ def sync_tasks():
             except Exception as error:
                 print("Failed To Close Task:" + tast.name + " - " + error)
 
+    print("Closed Tasks:", [tast.name for task in existant_result if task.status != 'No Submission' for tast in todoist_tasklist if task.assignment_name == tast.name])
+
     # Add Sections
     sections = project.get_sections()
     no_sec_found = [course for course in combined_courses.values() if all(section.name != course.course_name for section in sections) and course.get_assignments_list() != []]
@@ -152,12 +161,15 @@ def sync_tasks():
 
     project.add_tasks(toadd)
 
+    print("Added Tasks:", [task.assignment_name for task in no_result])
+
     print("Finished Update Cycle")
 
 def schedule_sync():
     sync_tasks()
     Timer(39.0, schedule_sync).start()  # Re-run every 10 seconds
 
-# Start the synchronization when the app is initialized
-schedule_sync()
+if __name__ == '__main__':
+    # When run as a script, start the periodic sync loop.
+    schedule_sync()
 

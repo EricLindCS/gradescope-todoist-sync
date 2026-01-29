@@ -40,7 +40,7 @@ class CanvasCourse:
                 assignment_id = assignment['id']
                 assignment_name = assignment['name']
                 submission = assignment.get('submission')
-                assignment_status = "No Submission" if submission is None or submission['workflow_state'] == "unsubmitted" else True
+                assignment_status = "No Submission" if submission is None or submission['workflow_state'] == "unsubmitted" or submission['submitted_at'] is None or submission['submission_type'] is None else True
                 due_date = assignment.get('due_at')
                 canvas_assignment = CanvasAssignment(self._client, self, assignment_id, assignment_name, due_date, assignment_status)
                 canvas_assignments.append(canvas_assignment)

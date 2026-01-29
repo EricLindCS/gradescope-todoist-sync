@@ -3,3 +3,5 @@
 testsetup.py
 test.py
 canvastest.py
+__pycache__/
+canvas_api/__pycache__/
