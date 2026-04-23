@@ -5,14 +5,12 @@ This program was written for me to keep track of my class assignments posted to 
 ## Table of Contents
 
 - Introduction
-- Features
 - Requirements
 - Installation
 - Configuration
 - [Running Locally](#running-locally)
 - [Deploying to a Web Platform](#deploying-to-a-web-platform)
 - Usage
-- Contributing
 - License
 
 ## Introduction
