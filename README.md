@@ -1,6 +1,6 @@
 # Gradescope-Todo Sync
 
-An unofficial Gradescope API that syncs assignments to Todoist.
+This program was written for me to keep track of my class assignments posted to Canvas and UCB's preferred submission platform Gradescope all in one place.
 
 ## Table of Contents
 
@@ -17,19 +17,13 @@ An unofficial Gradescope API that syncs assignments to Todoist.
 
 ## Introduction
 
-This project provides a way to sync assignments from Gradescope to Todoist. It uses Flask to create a web server that handles the synchronization process.
-
-## Features
-
-- Sync Gradescope assignments to Todoist.
-- Schedule automatic synchronization.
-- Simple and easy-to-use API.
+This project provides a way to sync assignments from Gradescope to Todoist. It uses Flask to create a web server that handles the synchronization process (that can be deployed to render, heroku, railway, etc), or runs once using onceonce.py (and locally set to run on computer login using Apple Shortcuts or Windows scripting). 
 
 ## Requirements
 
 - Python 3.6 or higher
 - [Todoist API Key](https://developer.todoist.com/)
-- [Gradescope Account](https://www.gradescope.com/)
+- [Gradescope Account](https://www.gradescope.com/) -> Requires -email- login, configurable in gradescope settings. 
 
 ## Installation
 
@@ -82,16 +76,12 @@ This project provides a way to sync assignments from Gradescope to Todoist. It u
 2. **Run the Flask application:**
 
     ```sh
-    python app.py
+    python runonce.py
     ```
 
-3. **Open your browser and navigate to:**
+3. **Result**
 
-    ```
-    http://127.0.0.1:5000
-    ```
-
-    You should see a message indicating that the task sync app is running.
+    You should see terminal output describing the process' run.
 
 ## Deploying to a Web Platform
 
@@ -146,10 +136,6 @@ For other platforms like AWS, Google Cloud, or Azure, follow their respective do
 ## Usage
 
 Once the application is running, it will automatically sync your Gradescope assignments to Todoist based on the schedule defined in the [`app.py`] file.
-
-## Contributing
-
-Contributions are welcome! Please open an issue or submit a pull request on GitHub.
 
 ## License
 
